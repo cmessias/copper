@@ -9,6 +9,5 @@ defmodule Copper do
   Internally, it used integer fields to avoid loss of precision.
   """
 
-  defstruct amount: 0, fraction: 0, currency: :usd, decimal_digits: 2
-
+  defstruct amount: 0, fraction: 0, currency: :USD
 end
