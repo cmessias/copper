@@ -41,7 +41,11 @@ defmodule Copper.ExchangeAccess do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         Logger.info("Got response from external api: #{body}")
         {:external, body}
+      {:ok, %HTTPoison.Response{status_code: 404, body: body}} ->
+        Logger.info("Got error from external api: #{body}")
+        {:error, :not_found}
       {:error, %HTTPoison.Error{reason: reason}} ->
+        Logger.info("Got error from external api: #{reason}")
         {:error, reason}
     end
   end
@@ -54,23 +58,27 @@ defmodule Copper.ExchangeAccess do
     {:cache, value}
   end
 
-  def parse_response({:error, reason}) do
-    {:error, reason}
-  end
-
   def parse_response({:external, response}) do
-    response = Jason.decode!(response, [keys: :atoms])
+    response = Jason.decode!(response, keys: :atoms)
     case response.result do
       "success" -> {:external, response}
       "error" -> {:error, String.replace(response.error, "-", "_") |> String.to_atom()}
     end
   end
+
+  def parse_response({:error, reason}) do
+    {:error, reason}
+  end
+
   def update_cache_if_stale({:cache, value}) do
     {:ok, value}
   end
 
   def update_cache_if_stale({:external, value}) do
-    Cachex.put(:conversion_rate, Currency.to_atom(value.base), value)
+    now = DateTime.utc_now() |> DateTime.to_unix(:second)
+    cache_ttl = value.time_next_update - now
+
+    Cachex.put(:conversion_rate, Currency.to_atom(value.base), value, ttl: :timer.seconds(cache_ttl))
     {:ok, value}
   end
 
@@ -85,5 +93,4 @@ defmodule Copper.ExchangeAccess do
   def get_rate({:error, reason}, _to_currency) do
     {:error, reason}
   end
-
 end
