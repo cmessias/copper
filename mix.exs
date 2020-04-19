@@ -14,7 +14,8 @@ defmodule Copper.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger],
+      mod: {Copper, []}
     ]
   end
 
@@ -22,6 +23,9 @@ defmodule Copper.MixProject do
   defp deps do
     [
       {:ex_doc, "~> 0.21.3"},
+      {:cachex, "~> 3.2"},
+      {:httpoison, "~> 1.6"},
+      {:jason, "~> 1.2"},
     ]
   end
 end

@@ -6,8 +6,12 @@ defmodule Copper do
 
   Copper can be used to represent specific money quantities and used for operations such as share split and conversion between different currencies.
 
-  Internally, it used integer fields to avoid loss of precision.
+  Internally, it uses integer fields to avoid loss of precision.
   """
+  use Application
 
-  defstruct amount: 0, fraction: 0, currency: :USD
+  @impl true
+  def start(_type, _args) do
+    Copper.Supervisor.start_link(name: Copper.Supervisor)
+  end
 end

@@ -193,11 +193,11 @@ defmodule Copper.Currency do
   end
 
   def exist?(currency) do
-    Map.has_key?(all_currencies(), currency_atom(currency))
+    Map.has_key?(all_currencies(), to_atom(currency))
   end
 
   def get_currency(currency) do
-    Map.get(all_currencies(), currency_atom(currency))
+    Map.get(all_currencies(), to_atom(currency))
   end
 
   def currency_name(currency) do
@@ -212,9 +212,9 @@ defmodule Copper.Currency do
     get_currency(currency)[:exponent]
   end
 
-  defp currency_atom(currency) when is_atom(currency), do: currency
+  def to_atom(currency) when is_atom(currency), do: currency
 
-  defp currency_atom(currency) do
+  def to_atom(currency) do
     currency |> String.upcase() |> String.to_atom()
   end
 end
