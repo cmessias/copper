@@ -1,15 +1,49 @@
 defmodule Copper.ExchangeAccess do
+  @moduledoc """
+  ExchangeAccess is the module responsible for querying external apis for up-to-date conversion rates.
+
+  Which API to query can be configured in config/config.exs. Notice that some apis require keys to be used,
+  and these can be placed in config/api_keys.exs.
+
+  This module is implemented following the Railroad Pattern
+  as described by Scott Wlaschin in https://fsharpforfunandprofit.com/rop/.
+
+  There are three flows for a request, depending if we get a cache hit, a cache miss or some error along the way.
+  - If we have a cache miss, the entire pipe will be executed, querying the external api, parsing the response,
+  updating the cache and lastly returning the value.
+  - If we have a cache hit, the cache passes forward the information and most functions, except the last, are no-operations,
+  since we already have the information we want.
+  - If there is any error along the way, all remaining functions in the pipe are no-operations
+  and the error is passed down until being returned to the user.
+
+  Here is a comprehensive list of errors that can happen whenever fetching rates and what to do if they happen:
+  - :invalid_key The external api endpoint configured in config.exs requires a key and the key used in the request is invalid.
+  Update the config/api_keys.exs file and make sure to use a valid key. Account creation may be required to use that api.
+  - :unknown_code Tried to get a conversion rate for a unknown or invalid currency.
+  Make sure to use the 3-letter ISO 4217 code for currencies whenever fetching rates.
+  - :not_found The api endpoint is not properly configured in config/config.exs.
+  """
   require Logger
   alias Copper.Currency
 
-  def api_endpoint do
+  defp api_endpoint do
     Application.fetch_env!(:copper, :exchange_api_endpoint)
   end
 
-  def api_key do
+  defp api_key do
     Application.fetch_env!(:copper, :api_key)
   end
 
+  @doc """
+  Fetch an up-to-date conversion rate between two currencies.
+
+  ## Examples
+      iex> Copper.ExchangeAccess.rate("USD", "BRL")
+      {:ok, 5.2392}
+
+      iex> Copper.ExchangeAccess.rate("WRONG_CURRENCY", "BRL")
+      {:error, :unknown_code}
+  """
   def rate(from_currency, to_currency) do
     from_currency
     |> Currency.to_atom()
@@ -20,7 +54,7 @@ defmodule Copper.ExchangeAccess do
     |> get_rate(Currency.to_atom(to_currency))
   end
 
-  def fetch_from_cache(currency) do
+  defp fetch_from_cache(currency) do
     case Cachex.get(:conversion_rate, currency) do
       {:ok, nil} -> {:external, currency}
       {:ok, value} -> {:cache, value}
@@ -30,11 +64,11 @@ defmodule Copper.ExchangeAccess do
     end
   end
 
-  def fetch_external_if_needed({:cache, value}) do
+  defp fetch_external_if_needed({:cache, value}) do
     {:cache, value}
   end
 
-  def fetch_external_if_needed({:external, currency}) do
+  defp fetch_external_if_needed({:external, currency}) do
     Logger.info("Calling external api for #{currency} rates")
 
     case HTTPoison.get(api_endpoint() <> "#{api_key()}/latest/#{currency}") do
@@ -50,15 +84,11 @@ defmodule Copper.ExchangeAccess do
     end
   end
 
-  def fetch_external_if_needed({:error, reason}) do
-    {:error, reason}
-  end
-
-  def parse_response({:cache, value}) do
+  defp parse_response({:cache, value}) do
     {:cache, value}
   end
 
-  def parse_response({:external, response}) do
+  defp parse_response({:external, response}) do
     response = Jason.decode!(response, keys: :atoms)
     case response.result do
       "success" -> {:external, response}
@@ -66,15 +96,15 @@ defmodule Copper.ExchangeAccess do
     end
   end
 
-  def parse_response({:error, reason}) do
+  defp parse_response({:error, reason}) do
     {:error, reason}
   end
 
-  def update_cache_if_stale({:cache, value}) do
+  defp update_cache_if_stale({:cache, value}) do
     {:ok, value}
   end
 
-  def update_cache_if_stale({:external, value}) do
+  defp update_cache_if_stale({:external, value}) do
     now = DateTime.utc_now() |> DateTime.to_unix(:second)
     cache_ttl = value.time_next_update - now
 
@@ -82,15 +112,15 @@ defmodule Copper.ExchangeAccess do
     {:ok, value}
   end
 
-  def update_cache_if_stale({:error, reason}) do
+  defp update_cache_if_stale({:error, reason}) do
     {:error, reason}
   end
 
-  def get_rate({:ok, cache}, to_currency) do
+  defp get_rate({:ok, cache}, to_currency) do
     {:ok, Map.get(cache.conversion_rates, to_currency)}
   end
 
-  def get_rate({:error, reason}, _to_currency) do
+  defp get_rate({:error, reason}, _to_currency) do
     {:error, reason}
   end
 end
