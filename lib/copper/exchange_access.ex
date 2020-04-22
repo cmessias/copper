@@ -34,6 +34,10 @@ defmodule Copper.ExchangeAccess do
     Application.fetch_env!(:copper, :api_key)
   end
 
+  defp api_query(currency) do
+    api_endpoint() <> "#{api_key()}/latest/#{currency}"
+  end
+
   @doc """
   Fetch an up-to-date conversion rate between two currencies.
 
@@ -47,6 +51,7 @@ defmodule Copper.ExchangeAccess do
   def rate(from_currency, to_currency) do
     from_currency
     |> Currency.to_atom()
+    |> validate_currencies(Currency.to_atom(to_currency))
     |> fetch_from_cache()
     |> fetch_external_if_needed()
     |> parse_response()
@@ -54,7 +59,15 @@ defmodule Copper.ExchangeAccess do
     |> get_rate(Currency.to_atom(to_currency))
   end
 
-  defp fetch_from_cache(currency) do
+  defp validate_currencies(from_currency, to_currency) do
+    if Currency.exist?(from_currency) && Currency.exist?(to_currency) do
+      {:ok, from_currency}
+    else
+      {:error, :unknown_code}
+    end
+  end
+
+  defp fetch_from_cache({:ok, currency}) do
     case Cachex.get(:conversion_rate, currency) do
       {:ok, nil} -> {:external, currency}
       {:ok, value} -> {:cache, value}
@@ -64,6 +77,10 @@ defmodule Copper.ExchangeAccess do
     end
   end
 
+  defp fetch_from_cache({:error, reason}) do
+    {:error, reason}
+  end
+
   defp fetch_external_if_needed({:cache, value}) do
     {:cache, value}
   end
@@ -71,7 +88,7 @@ defmodule Copper.ExchangeAccess do
   defp fetch_external_if_needed({:external, currency}) do
     Logger.info("Calling external api for #{currency} rates")
 
-    case HTTPoison.get(api_endpoint() <> "#{api_key()}/latest/#{currency}") do
+    case HTTPoison.get(api_query(currency)) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         Logger.info("Got response from external api: #{body}")
         {:external, body}
@@ -82,6 +99,10 @@ defmodule Copper.ExchangeAccess do
         Logger.info("Got error from external api: #{reason}")
         {:error, reason}
     end
+  end
+
+  defp fetch_external_if_needed({:error, reason}) do
+    {:error, reason}
   end
 
   defp parse_response({:cache, value}) do
@@ -117,7 +138,11 @@ defmodule Copper.ExchangeAccess do
   end
 
   defp get_rate({:ok, cache}, to_currency) do
-    {:ok, Map.get(cache.conversion_rates, to_currency)}
+    if Map.has_key?(cache.conversion_rates, to_currency) do
+      {:ok, Map.get(cache.conversion_rates, to_currency)}
+    else
+      {:error, :unknown_code}
+    end
   end
 
   defp get_rate({:error, reason}, _to_currency) do
