@@ -6,6 +6,8 @@ defmodule Copper.MixProject do
       app: :copper,
       version: "0.1.0",
       elixir: "~> 1.10",
+      name: "Copper",
+      source_url: "https://github.com/caio-messias/copper",
       start_permanent: Mix.env() == :prod,
       deps: deps()
     ]
