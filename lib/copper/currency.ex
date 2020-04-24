@@ -188,30 +188,101 @@ defmodule Copper.Currency do
     ZWL: %{currency_name: "Zimbabwean dollar", numeric_code: 932, exponent: 2}
   }
 
+  @doc """
+  Returns a map of maps with all currencies described in ISO 4217.
+  The 3-letter code of a currency is the key mapping to another map,
+  containing information such as currency name and exponent.
+
+  ## Examples
+      iex> Copper.Currency.all_currencies
+      %{
+        PHP: %{currency_name: "Philippine peso", exponent: 2, numeric_code: 608},
+        PAB: %{currency_name: "Panamanian balboa", exponent: 2, numeric_code: 590},
+        BZD: %{currency_name: "Belize dollar", exponent: 2, numeric_code: 84},
+      ...
+      }
+  """
+  @spec all_currencies :: map
   def all_currencies do
     @currencies
   end
 
+  @doc """
+  Return true or false if the given currency is described in ISO 4217 or not.
+
+  ## Examples
+      iex> Copper.Currency.exist?(:BRL)
+      true
+
+      iex> Copper.Currency.exist?(:AAA)
+      false
+  """
+  @spec exist?(atom | binary) :: boolean
   def exist?(currency) do
     Map.has_key?(all_currencies(), to_atom(currency))
   end
 
+  @doc """
+  Given a 3-letter code of a currency, returns all the information available about it in a map,
+  including name, numeric code and exponent.
+
+  ## Examples
+      iex> Copper.Currency.get_currency(:USD)
+      %{currency_name: "United States dollar", exponent: 2, numeric_code: 840}
+
+      iex> Copper.Currency.get_currency(:JPY)
+      %{currency_name: "Japanese yen", exponent: 0, numeric_code: 392}
+  """
+  @spec get_currency(atom | binary) :: map
   def get_currency(currency) do
     Map.get(all_currencies(), to_atom(currency))
   end
 
+  @doc """
+  Given a 3-letter code, returns the full name of this currency.
+
+  ## Examples
+      iex> Copper.Currency.currency_name(:BRL)
+      "Brazilian real"
+  """
+  @spec currency_name(atom | binary) :: binary
   def currency_name(currency) do
     get_currency(currency)[:currency_name]
   end
 
+  @doc """
+  Given a 3-letter code, returns the numeric code of this currency.
+
+  ## Examples
+      iex> Copper.Currency.numeric_code(:USD)
+      840
+  """
+  @spec numeric_code(atom | binary) :: non_neg_integer
   def numeric_code(currency) do
     get_currency(currency)[:numeric_code]
   end
 
+  @doc """
+  Given a 3-letter code, returns the exponent of this currency.
+
+  ## Examples
+      iex> Copper.Currency.exponent(:USD)
+      2
+  """
+  @spec exponent(atom | binary) :: non_neg_integer
   def exponent(currency) do
     get_currency(currency)[:exponent]
   end
 
+  @doc """
+  Given a string, transform it into a atom for use in this module.
+  For example, the map returned in all_currencies has atoms as keys.
+
+  ## Examples
+      iex> Copper.Currency.to_atom("BRL")
+      :BRL
+  """
+  @spec to_atom(atom | binary) :: atom
   def to_atom(currency) when is_atom(currency), do: currency
 
   def to_atom(currency) do
