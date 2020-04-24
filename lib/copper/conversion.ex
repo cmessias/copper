@@ -32,8 +32,20 @@ defmodule Copper.Conversion do
     end
   end
 
-  @doc false
-  def do_conversion_calculation(money = %Money{currency: from_currency}, to_currency, rate) do
+  @doc """
+  Similar to `convert/2`, but with the rate also given, avoiding making
+  any external calls.
+
+  ## Examples
+      iex> Copper.Conversion.convert(%Copper.Money{amount: 10, fraction: 99, currency: :USD}, :BRL, 5.321)
+      {:ok, %Copper.Money{amount: 58, currency: :BRL, fraction: 48}}
+  """
+  @spec convert(Copper.Money.t, atom, float) :: {:ok, Copper.Money.t} | {:error, String.t}
+  def convert(from_money = %Money{}, to_currency, rate) do
+    do_conversion_calculation(from_money, to_currency, rate)
+  end
+
+  defp do_conversion_calculation(money = %Money{currency: from_currency}, to_currency, rate) do
     from_precision = Currency.exponent(from_currency)
     to_precision = Currency.exponent(to_currency)
     whole_number = Money.to_whole_number(money)
