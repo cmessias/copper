@@ -22,6 +22,8 @@ defmodule Copper.ExchangeAccess do
   - :unknown_code Tried to get a conversion rate for a unknown or invalid currency.
   Make sure to use the 3-letter ISO 4217 code for currencies whenever fetching rates.
   - :not_found The api endpoint is not properly configured in config/config.exs.
+  - :connect_timeout and :timeout The connection to the api could not be made within the timeouts described in config/config.exs.
+  If the external api is slow, consider increasing this value.
   """
   require Logger
   alias Copper.Currency
@@ -38,6 +40,14 @@ defmodule Copper.ExchangeAccess do
     api_endpoint() <> "#{api_key()}/latest/#{currency}"
   end
 
+  defp timeout() do
+    Application.fetch_env!(:copper, :timeout)
+  end
+
+  defp recv_timeout() do
+    Application.fetch_env!(:copper, :recv_timeout)
+  end
+
   @doc """
   Fetch an up-to-date conversion rate between two currencies.
 
@@ -48,6 +58,7 @@ defmodule Copper.ExchangeAccess do
       iex> Copper.ExchangeAccess.rate("WRONG_CURRENCY", "BRL")
       {:error, :unknown_code}
   """
+  @spec rate(atom | binary, atom | binary) :: {:ok, float} | {:error, atom}
   def rate(from_currency, to_currency) do
     from_currency
     |> Currency.to_atom()
@@ -88,7 +99,7 @@ defmodule Copper.ExchangeAccess do
   defp fetch_external_if_needed({:external, currency}) do
     Logger.info("Calling external api for #{currency} rates")
 
-    case HTTPoison.get(api_query(currency)) do
+    case HTTPoison.get(api_query(currency), [], [timeout: timeout(), recv_timeout: recv_timeout()]) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         Logger.info("Got response from external api: #{body}")
         {:external, body}
