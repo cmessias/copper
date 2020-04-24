@@ -79,6 +79,8 @@ Copper can be ran in iex with the following command:
 $ iex -S mix 
 ```
 
+To do currency conversions, an api key may be needed to use certain exchange rates apis. Which api to use can be configured in config/config.exs and your api keys can be set in config/api_keys.exs.
+
 ## Documentation
 Documentation is available in the source files and can be viewed locally can compiling it using:
 ``` 
