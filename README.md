@@ -9,10 +9,10 @@ Internally, it stores the value as two separated integer fields to maintain prec
 ### Examples
 ``` Elixir
 iex> Copper.Money.new(10, 99)
-%Copper.Money{amount: 10, currency: :USD, fraction: 99}
+%Copper.Money{amount: 10, fraction: 99, currency: :USD}
 
 iex> Copper.Money.new(10, 99, :BRL)
-%Copper.Money{amount: 10, currency: :BRL, fraction: 99}
+%Copper.Money{amount: 10, fraction: 99, currency: :BRL}
 ```
 
 ## Currency Conversion
@@ -23,13 +23,13 @@ To convert a currency, an external exchange rate api is queried for up-to-date c
 iex> Copper.Conversion.convert(%Copper.Money{amount: 10, fraction: 45, currency: :USD}, :BRL)
 {:ok, %Copper.Money{amount: 55, fraction: 54, currency: :BRL}}
 
-# Some currencies do not have subunits, meaning that their fraction part is always zero.
+# Some currencies do not have sub-units, meaning that their fraction part is always zero.
 iex> Copper.Conversion.convert(%Copper.Money{amount: 1, fraction: 25, currency: :USD}, :JPY)
 {:ok, %Copper.Money{amount: 134, currency: :JPY, fraction: 0}}
 
 # If there is an error with any of the currencies 
 # (for example, trying to convert to a non-existing currency)
-# the error is detected early and not external calls are made.
+# the error is detected early and no external calls are made.
 iex> Copper.Conversion.convert(%Copper.Money{amount: 1, fraction: 20, currency: :AAA}, :JPY)
 {:error, :unknown_code}
 ```
