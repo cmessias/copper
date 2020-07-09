@@ -1,16 +1,10 @@
 # Copper
-Copper is a data type for use in money operations, based on the Martin Fowler's Money Pattern and with support for currencies described in ISO 4217.
-
-Copper can be used to represent specific money quantities and used for operations such as share split and conversion between different currencies.
+Copper is a data type for usage in money operations, based on the Martin Fowler's Money Pattern and with support for currencies described in ISO 4217. It can be used to represent specific quantities and used for operations such as share split and conversion between different currencies.
 
 ## Money
-A structure to represent a monetary value and currency.
+A structure to represent a monetary value in a currency.
 
-Internally, it stores the value as two separated integer fields to maintain precision.
-
-For example, the decimal value 10.99 would be stored as amount: 10, fraction: 99.
-
-Also has a field for specifying the currency for the value, which can be used to verify the precision of this currency, for example.
+Internally, it stores the value as two separated integer fields to maintain precision. For example, the decimal value 10.99 would be stored as `{amount: 10, fraction: 99}`. It also has a field for specifying the currency and to guarantee precision.
 
 ### Examples
 ``` Elixir
@@ -82,7 +76,7 @@ $ iex -S mix
 To do currency conversions, an api key may be needed to use certain exchange rates apis. Which api to use can be configured in config/config.exs and your api keys can be set in config/api_keys.exs.
 
 ## Documentation
-Documentation is available in the source files and can be viewed locally can compiling it using:
+Documentation can be viewed locally by running:
 ``` 
 $ mix docs
 $ open docs/index.html
